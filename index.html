@@ -5,37 +5,149 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SABET AUTO TRADER</title>
 <style>
-    body {
-        margin: 0; padding: 0; background-color: #0a0a0a; color: #fff;
-        font-family: Arial, sans-serif; display: flex; justify-content: center;
-        align-items: center; height: 100vh; text-align: center;
-    }
-    .container {
-        padding: 30px; border: 2px solid #ff3333; border-radius: 15px;
-        background: #1a1a1a; box-shadow: 0 0 30px rgba(255, 51, 51, 0.3);
-    }
-    h1 { color: #ff3333; text-shadow: 0 0 10px #ff3333; font-size: 24px; margin-bottom: 10px; }
-    p { color: #ccc; font-size: 14px; margin-bottom: 20px; }
-    .btn {
-        display: inline-block; padding: 15px 30px; background: #ff3333;
-        color: #fff; font-weight: bold; border-radius: 8px;
-        cursor: grab; text-decoration: none; box-shadow: 0 0 15px #ff3333;
-        border: 2px solid #ff6666; animation: pulse 1.5s infinite;
-    }
-    @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+    body { margin: 0; padding: 0; overflow: hidden; background: #000; }
+    iframe { width: 100vw; height: 100vh; border: none; }
+    
+    /* SABET Floating Window CSS */
+    #sabet-panel { position: fixed; top: 50px; right: 10px; width: 260px; background: #1a1a1a; border: 2px solid #ff3333; border-radius: 12px; padding: 15px; z-index: 999999; box-shadow: 0 0 20px #ff3333; color: #fff; font-family: Arial; transition: all 0.3s; }
+    #sabet-panel.minimized { width: 50px; height: 50px; border-radius: 50%; padding: 0; display: flex; justify-content: center; align-items: center; cursor: pointer; background: #ff3333; }
+    #sabet-panel.minimized * { display: none; }
+    #sabet-panel.minimized::after { content: 'S'; font-size: 24px; font-weight: bold; color: #fff; display: block; }
+    .sabet-q-btn { padding: 5px 8px; background: #222; color: #fff; border: 1px solid #ff3333; border-radius: 4px; cursor: pointer; margin: 0 2px; }
+    .sabet-q-btn.active { background: #ff3333; }
+    #sabet-scan-btn { width: 100%; padding: 10px; background: #ff3333; color: #fff; border: none; border-radius: 6px; font-weight: bold; font-size: 16px; margin-top: 10px; cursor: pointer; }
+    #sabet-scan-btn.scanning { background: #ff8800; animation: pulse 0.5s infinite; }
+    #sabet-status { text-align: center; font-size: 12px; margin-top: 10px; color: #aaa; }
+    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
 </style>
 </head>
 <body>
 
-<div class="container">
-    <h1>⚡ SABET AUTO TRADER ⚡</h1>
-    <p>নিচের লাল বাটনটি ব্রাউজারের বুকমার্কে সেভ করুন।</p>
-    
-    <!-- বুকমার্কের আসল লিংক -->
-    <a href="javascript:(function(){var script=document.createElement('script');script.src='https://cdn.jsdelivr.net/gh/sabet10/sabet-bookmark@main/main.js';document.body.appendChild(script);})();" class="btn" onclick="alert('ব্রাউজারের বুকমার্কে সেভ করুন, সরাসরি ক্লিক করলে কাজ করবে না!'); return false;">
-        SABET AUTO
-    </a>
-</div>
+<!-- তোমার গেমের লিংক এখানে বসানো হলো -->
+<iframe id="gameFrame" src="https://dkwin9.com/#/register?invitationCode=56638463340"></iframe>
 
+<script>
+    // UI তৈরি
+    const style = document.createElement('style');
+    const panel = document.createElement('div');
+    panel.id = 'sabet-panel';
+    panel.innerHTML = `
+        <h3 style="text-align:center; color:#ff3333; margin:0 0 10px;">SABET AUTO</h3>
+        <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+            <button class="sabet-q-btn" data-q="1">1</button>
+            <button class="sabet-q-btn" data-q="5">5</button>
+            <button class="sabet-q-btn active" data-q="10">10</button>
+            <button class="sabet-q-btn" data-q="20">20</button>
+            <button class="sabet-q-btn" data-q="50">50</button>
+            <button class="sabet-q-btn" data-q="100">100</button>
+        </div>
+        <button id="sabet-scan-btn">SCAN & TRADE</button>
+        <div id="sabet-status">Ready</div>
+    `;
+    document.body.appendChild(panel);
+
+    // Drag Logic
+    let isDragging = false, offsetX, offsetY;
+    panel.addEventListener('mousedown', (e) => { isDragging = true; offsetX = e.clientX - panel.getBoundingClientRect().left; offsetY = e.clientY - panel.getBoundingClientRect().top; });
+    document.addEventListener('mousemove', (e) => { if (isDragging) { panel.style.left = (e.clientX - offsetX) + 'px'; panel.style.top = (e.clientY - offsetY) + 'px'; panel.style.right = 'auto'; } });
+    document.addEventListener('mouseup', () => isDragging = false);
+
+    // Minimize Logic
+    panel.querySelector('h3').onclick = () => panel.classList.toggle('minimized');
+    panel.onclick = (e) => { if (panel.classList.contains('minimized')) panel.classList.remove('minimized'); };
+
+    // Quantity Selection
+    let activeQ = '10';
+    const qBtns = panel.querySelectorAll('.sabet-q-btn');
+    qBtns.forEach(btn => {
+        btn.onclick = function() {
+            qBtns.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            activeQ = this.getAttribute('data-q');
+        };
+    });
+
+    // Main Logic
+    const API = 'https://draw.ar-lottery01.com/WinGo/WinGo_30S/GetHistoryIssuePage.json?ts=';
+    const status = document.getElementById('sabet-status');
+    const scanBtn = document.getElementById('sabet-scan-btn');
+    const iframeDoc = document.getElementById('gameFrame').contentWindow.document;
+
+    scanBtn.onclick = function() {
+        if (this.classList.contains('scanning')) return;
+        this.classList.add('scanning');
+        this.innerText = 'SCANNING...';
+        status.innerText = 'Scanning 40 Markets...';
+        status.style.color = '#ffd700';
+
+        let timeLeft = 5;
+        const timer = setInterval(() => {
+            timeLeft--;
+            status.innerText = `Scanning... ${timeLeft}s`;
+            if (timeLeft <= 0) { clearInterval(timer); executeTrade(); }
+        }, 1000);
+    };
+
+    async function executeTrade() {
+        try {
+            const res = await fetch(API + Date.now());
+            const data = await res.json();
+            const list = data.data.list.slice(0, 40);
+            
+            let bigs = 0, smalls = 0, streak = 0, last = parseInt(list[0].number) >= 5;
+            list.forEach((x, i) => {
+                let isB = parseInt(x.number) >= 5;
+                if (isB) bigs++; else smalls++;
+                if (isB === last && i < 5) streak++;
+            });
+
+            let isBig = (streak >= 3) ? !last : (bigs > smalls + 5 ? false : (smalls > bigs + 5 ? true : !last));
+
+            status.innerText = `Signal: ${isBig ? 'BIG' : 'SMALL'}`;
+            status.style.color = '#ff3333';
+
+            // Attempting to click inside iframe
+            clickBtnByText(isBig ? 'BIG' : 'SMALL');
+            
+            setTimeout(() => {
+                clickBtnByText(activeQ);
+                setTimeout(() => {
+                    clickBtnByText('Total amount');
+                    status.innerText = '✅ Trade Placed!';
+                    status.style.color = '#00ff88';
+                    resetBtn();
+                }, 1000);
+            }, 1000);
+        } catch (e) {
+            status.innerText = 'Error (CORS Blocked)';
+            status.style.color = '#ff3333';
+            resetBtn();
+        }
+    }
+
+    function clickBtnByText(text) {
+        // Try to access iframe
+        try {
+            const iframe = document.getElementById('gameFrame');
+            const doc = iframe.contentWindow.document || iframe.contentDocument;
+            const elements = doc.querySelectorAll('div, span, button');
+            for (let el of elements) {
+                if (el.innerText && el.innerText.trim().toUpperCase() === text.toUpperCase() && el.offsetParent !== null) {
+                    if (el.parentElement && el.parentElement.innerText.includes('Balance')) continue;
+                    el.click();
+                    return;
+                }
+            }
+        } catch (e) {
+            console.log("CORS Error: Cannot access iframe");
+        }
+    }
+
+    function resetBtn() {
+        scanBtn.classList.remove('scanning');
+        scanBtn.innerText = 'SCAN & TRADE';
+        setTimeout(() => { status.innerText = 'Ready'; status.style.color = '#aaa'; }, 3000);
+    }
+</script>
 </body>
 </html>
